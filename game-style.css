@@ -1,0 +1,41 @@
+.crime-container {
+    display: grid;
+    gap: 10px;
+    background-color: #2e0a38;
+    padding: 10px;
+  }
+.crime-container > div {
+    background-color:#c61bf5
+}
+
+#crime-container {
+  display: grid;
+  grid-template-columns: 40px 200px 200px 50px 200px 30px 30px 50px;
+}
+#crime-container > div {
+  min-width: 0;
+}
+
+#crime-container-header{
+  grid-template-columns: 250px 250px 350px;
+}
+
+.crimeUIButton{
+  width: 100%;
+  height: 100%;
+}
+
+.crimeProgressText{
+  font-size: 25px;
+}
+
+.observeButton{
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+
+/*
+.postGoon{
+  visibility: hidden;
+}
