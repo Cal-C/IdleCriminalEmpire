@@ -1,1 +1,23 @@
 ce.fn.init {0: div#shopliftProgressBarFilling.crimeProgressBarFilling, length: 1}
+
+
+    console.log("You bought " + goonCount + " goons");
+
+v2
+while(buying){
+        buying = buyGoon(tryBuying, true);
+        if(buying){
+            goonCount += tryBuying;
+        }else{
+            if(tryBuying != 1){
+                tryBuying = Math.round(tryBuying/2);
+                buying = true;
+            }
+        }
+    }
+
+v1
+while(buying){
+        buying = buyGoon(1, true);
+        goonCount++;
+    }
