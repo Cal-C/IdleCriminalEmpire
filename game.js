@@ -9,7 +9,7 @@ var mangmentMultiplier = .1;
 
 var goonDiscount = 1;
 
-var USD = 0;
+var USD = 9999999;
 var energy = 100;
 var energyMax = 100;
 var energyRegenPerSecond = 1;
@@ -60,7 +60,7 @@ function personalCrimeButtonClicked(crimeName, preGoon = false){
         workHappened(preGoon);
         updateCurrentEnergy();
     }else{
-        $("#messageText").text("You do not have enough energy to " + crimeName +  "right now")
+        $("#messageText").text("You do not have enough energy to " + crime.display +  " right now")
     }
 }
 
@@ -100,7 +100,7 @@ function removeGoons(job){
         goonsFree += goonX;
         updateGoonNums(goonJob.name);
     }else{
-        $("#messageText").text("You do not have " + goonX + " goons to remove working on " + job + " right now")
+        $("#messageText").text("You do not have " + goonX + " goons to remove working on " + goonJob.display + " right now")
     }
 }
 
@@ -134,29 +134,36 @@ function buyNewJobClicked(){
 
 //helper funcitons
 function buyNewJob(){
+    job = jobs.find(job => job.name === nextJobName)
+
     if(USD >= nextJobCost){
         USD -= nextJobCost;
-        job = jobs.find(job => job.name === nextJobName)
         job.unlocked = true;
         createCrimeElements(nextJobName);
-        $("#messageText").text("You have unlocked the ability to " + nextJobName + " for " + nextJobCost + "$");
+        $("#messageText").text("You have unlocked the ability to " + job.display + " for " + nextJobCost + "$");
         updateCostNewJob();
         updateUSD();
         return true;
     }
     else{
         var cashNeeded = nextJobCost - USD;
-        $("#messageText").text("You do not have enough money to unlock " + nextJobName + " right now. You need " + cashNeeded + "$ more to unlock " + nextJobName);
+        $("#messageText").text("You do not have enough money to unlock " + job.display + " right now. You need " + cashNeeded + "$ more to unlock " + job.display);
         return false;
     }
 }
 function buyGoon(Goonnum = 1, silent = false){
+
     if(USD > goonPrice*Goonnum){
         goonsTotal += Goonnum;
         goonsFree += Goonnum;
         USD -= goonPrice*Goonnum;
-        updateGoonNums();
-        updateUSD();
+        
+        if(!silent){
+            updateGoonNums();
+            updateUSD();
+        }else{
+            updateGoonPrice();
+        }
         return true;
     }else{
         if(!silent){
@@ -185,9 +192,15 @@ function updateGoonNums(jobName = " "){
     }
 }
 
-function updateGoonPrice(){
-    goonPrice = (GOONBASECOST + goonsTotal*10 + 1.01^goonsTotal)*goonDiscount;
-    $("#goonPrice").text(goonPrice);
+function updateGoonPrice(hypotheticalTotal =  -1){
+    if(hypotheticalTotal != -1){
+        goonPrice = (GOONBASECOST + goonsTotal*10 + 1.01^goonsTotal)*goonDiscount;
+        $("#goonPrice").text(goonPrice);
+        return goonPrice;
+    }else{
+        const hypotheticalPrice = (GOONBASECOST + (hypotheticalTotal+1)*10 + 1.01^(hypotheticalTotal+1))*goonDiscount;
+        return hypotheticalPrice;
+    }
 }
 
 function hideAllPages(exception = "" ){
@@ -246,11 +259,13 @@ function updateCostNewJob(){
         nextJobName = nextJob.name;
         nextJobCost = nextJob.unlockCost;
         $("#NextJobCost").text(nextJobCost);
-        $("#NextJobName").text(nextJobName);
+        $("#NextJobName").text(nextJob.display);
         return;
     }else if(!nextJob){
-        $("#NextJobCost").text("");
-        $("#NextJobName").text("No more crimes to unlock");
+        $("#NextJobCost").text("No more crimes to unlock");
+        $("#NextJobName").text("");
+        $("#messageText").text("You have unlocked all the crimes");
+        $("#CostOfUnlocking").hide();
     }
 }
 
@@ -356,7 +371,7 @@ function createCrimeElements(crimeName) {
     observeButton.textContent = '🕶️';
 
     personalcrime.type = 'button';
-    personalcrime.textContent = crimeName;
+    personalcrime.textContent = jobs.find(job => job.name === crimeName).display;
     personalcrime.className = 'crimeUIButton';
     personalcrime.onclick = function() { personalCrimeButtonClicked(crimeName) };
 

@@ -1,6 +1,7 @@
 let jobs = [
     {
         "name" : "Shoplift",
+        "display" : "Shoplift",
         "money" : 1000,
         "work" : 10,
         "worked" : 0, 
@@ -11,6 +12,7 @@ let jobs = [
     },
     {
         "name" : "Pickpocket",
+        "display" : "Pickpocket",
         "money" : 2000,
         "work" : 20,
         "worked" : 0, 
@@ -21,6 +23,7 @@ let jobs = [
     },
     {
         "name" : "Robbery",
+        "display" : "Robbery",
         "money" : 5000,
         "work" : 50,
         "worked" : 0, 
@@ -30,7 +33,8 @@ let jobs = [
         "unlockCost" : 5000,
     },
     {
-        "name" : "Bank Heist",
+        "name" : "BankHeist",
+        "display" : "Bank Heist",
         "money" : 10000,
         "work" : 100,
         "worked" : 0, 

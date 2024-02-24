@@ -57,7 +57,7 @@
     <div id="GoonPage">
         <h1>Hire: </h1>
         <button type="button" onclick="hireGoonClicked()">Hire Goon</button><button type="button" onclick="hireMaxGoonClicked()">Max Goons</button>  <span>Goon Price: </span><span id="goonPrice">1</span><br>
-        <button type="button" onclick="buyNewJobClicked()">Buy New Crime</button><button type="button" onclick="buyMaxJobs()">Buy Max New Crimes </button><span> Cost of Unlocking </span> <span id = "NextJobName">Pickpocket</span> <span> : </span> <span id="NextJobCost">err</span>
+        <button type="button" onclick="buyNewJobClicked()">Buy New Crime</button><button type="button" onclick="buyMaxJobs()">Buy Max New Crimes </button><div id="CostOfUnlocking"><span> Cost of Unlocking </span> <span id = "NextJobName">Pickpocket</span> <span> : </span> </div><span id="NextJobCost">err</span>
     </div>
 
     <div id="BribePage">
