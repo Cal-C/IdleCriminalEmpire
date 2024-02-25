@@ -12,7 +12,7 @@
     
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
     -->
-
+    <script src="player-stats.js"></script>
     <script src="jobs.js"></script>
     <script src="game.js"></script>
     
@@ -65,6 +65,12 @@
     </div>
 
     <br>
+    <div id= "SaveLoad">
+        <button type="button" onclick="saveGame()">Save</button>
+        <button type="button" onclick="loadGame()">Load</button>
+        <span> Warning: Saving Uses 🍪Cookies🍪 </span>
+    </div>
+
     <br>
     <span> Version alpha <!-- or sigma who is the ultimate male?!?! --> 0.0.1 </span>
     <?php
