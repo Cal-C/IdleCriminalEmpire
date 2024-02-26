@@ -22,8 +22,8 @@ let jobs = [
         "unlockCost" : 1000,
     },
     {
-        "name" : "Robbery",
-        "display" : "Robbery",
+        "name" : "Mugging",
+        "display" : "Mugging",
         "money" : 5000,
         "work" : 50,
         "worked" : 0, 
@@ -33,14 +33,14 @@ let jobs = [
         "unlockCost" : 5000,
     },
     {
-        "name" : "BankHeist",
-        "display" : "Bank Heist",
+        "name" : "Hotwire",
+        "display" : "Hotwire",
         "money" : 10000,
         "work" : 100,
         "worked" : 0, 
         "goonsWorking" : 0,
         "observed" : false,
         "unlocked" : false,
-        "unlockCost" : 1000000,
+        "unlockCost" : 10000,
     },
 ]

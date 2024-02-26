@@ -68,11 +68,11 @@
     <div id= "SaveLoad">
         <button type="button" onclick="saveGame()">Save</button>
         <button type="button" onclick="loadGame()">Load</button>
-        <span> Warning: Saving Uses 🍪Cookies🍪 </span>
+        <span> Warning: Saving Uses 🍪Cookies🍪 <!--clicker was the og --!> </span>
     </div>
 
     <br>
-    <span> Version alpha <!-- or sigma who is the ultimate male?!?! --> 0.0.1 </span>
+    <span> Version alpha <!-- or sigma who is the ultimate male?!?! --> 0.0.1.5 </span>
     <?php
     echo "This server is running PHP: ";
     echo phpversion();

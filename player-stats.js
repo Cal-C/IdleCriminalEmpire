@@ -1,6 +1,6 @@
 var player = {
     workOnPersonalCrime: 10,
-    mangmentMultiplier: 0.1,
+    managementMultiplier: 0.1,
     goonDiscount: 1,
     USD: 0,
     energy: 100,
@@ -8,7 +8,7 @@ var player = {
     energyRegenPerSecond: 1,
     criminalCareerStage: "Street Level",
     goonsFree: 0,
-    goonsImprisioned: 0,
+    goonsImprisoned: 0,
     goonsTotal: 0,
     goonPrice: 0,
     observing: 0,
