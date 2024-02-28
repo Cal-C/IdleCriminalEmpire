@@ -1,4 +1,5 @@
 var player = {
+    name: "Stringer Bell",
     workOnPersonalCrime: 10,
     managementMultiplier: 0.1,
     goonDiscount: 1,

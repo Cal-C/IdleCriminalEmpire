@@ -3,6 +3,9 @@ const UPDATETIMEMILISECONDS = 50;
 const UPDATETIMESECONDS = UPDATETIMEMILISECONDS / 1000;
 const UPDATESPERSECOND = 1 / UPDATETIMESECONDS;
 const GOONUNLOCK = 2;
+const GOONMAXMANIPULATE = 1000000;
+
+var pageLoaded = false;
 
 function wakeUp() {
   //sheeple
@@ -20,6 +23,8 @@ function wakeUp() {
       " updates per second."
   ); //if you want to see how often the game updates
   console.log("in player: " + player.USD);
+  
+  pageLoaded = true;
 }
 
 //button functions
@@ -27,6 +32,12 @@ function wakeUp() {
 function menuNavClicked(whatPage) {
   hideAllPages();
   whatPage.hidden = false;
+}
+function goonXBoxMenuClicked() {
+  trySetGoonX(parseInt($("#goonXBox").val()));
+}
+function goonXMenuClicked(tmpGoonX){
+  trySetGoonX(tmpGoonX);
 }
 
 //crimes page
@@ -53,7 +64,7 @@ function shopliftClicked() {
     if (!$(".postGoon").is(":visible")) {
       unlockGoonPage();
       $("#messageText").text(
-        "You have unlocked the ability to hire goons to help you with your crimes"
+        "You have unlocked the ability to hire goons to help you with your crimes."
       );
     }
   } else {
@@ -62,20 +73,35 @@ function shopliftClicked() {
 }
 
 function addGoons(job) {
+  if(player.goonsFree == 0){
+    $("#messageText").text("You do not have any goons free right now.");
+    return;
+  }
+  let goonJob = jobs.find((goonJob) => goonJob.name === job);
   if (player.goonsFree - player.goonX >= 0) {
-    let goonJob = jobs.find((goonJob) => goonJob.name === job);
     goonJob.goonsWorking += player.goonX;
     player.goonsFree -= player.goonX;
     updateGoonNums(goonJob.name);
   } else {
     $("#messageText").text(
-      "You do not have " + player.goonX + " goons free right now"
+      "You do not have " + player.goonX + " goons free right now. Adding all "+ player.goonsFree  +" free goons to " + goonJob.display + " instead."
     );
+    goonJob.goonsWorking = goonJob.goonsWorking + player.goonsFree;
+    player.goonsFree = 0;
+    updateGoonNums(goonJob.name, true);
+  }
+  if (goonJob.goonsWorking > determineGoonCap(job)) {
+    var oldtext = $("#messageText").text();
+    $("#messageText").text(oldtext + ' You have added too many goons to ' + goonJob.display + ' it will not make it go faster. Consider capping the goons on ' + goonJob.display + ' to make the most of your goons.');
   }
 }
 
 function removeGoons(job) {
   let goonJob = jobs.find((goonJob) => goonJob.name === job);
+  if (goonJob.goonsWorking == 0) {
+    $("#messageText").text("You do not have any goons working on " + goonJob.display + " right now");
+    return;
+  }
   if (goonJob.goonsWorking - player.goonX >= 0) {
     goonJob.goonsWorking -= player.goonX;
     player.goonsFree += player.goonX;
@@ -86,26 +112,40 @@ function removeGoons(job) {
         player.goonX +
         " goons to remove working on " +
         goonJob.display +
-        " right now"
+        " right now. Removing all goons working on " +
+        goonJob.display
     );
+    player.goonsFree += goonJob.goonsWorking;
+    goonJob.goonsWorking = 0;
+    updateGoonNums(goonJob.name, true);
   }
 }
 
 //goon page
 function hireGoonClicked() {
+  if(player.goonX > 1){
+    hireMaxGoonClicked(player.goonX, true);
+    return;
+  }
   buyGoon();
 }
-function hireMaxGoonClicked() {
+function hireMaxGoonClicked(maxGoon = 2**10, capped = false) {
   var buying = true;
   var goonCount = 0;
-
-  if (player.USD / player.goonPrice < 2 ** 10) {
+  const incomingMaxGoon = maxGoon;
+  if(maxGoon != 2**10){
+    maxGoon = roundDownToPowerOfTwo(maxGoon);
+  }
+  if (player.USD / player.goonPrice < maxGoon) {
     //if you have enough money to buy 1024 goons (at current prices) do a binary search of how many goons you can actually buy starting at 1024
-    var tryBuying = 2 ** 10;
+    var tryBuying = maxGoon;
     while (buying) {
       buying = buyGoon(tryBuying, true);
       if (buying) {
         goonCount += tryBuying;
+        if(capped && goonCount+tryBuying >= incomingMaxGoon){
+          tryBuying = Math.round(tryBuying / 2);
+        }
       } else {
         if (tryBuying != 1) {
           tryBuying = Math.round(tryBuying / 2);
@@ -118,6 +158,9 @@ function hireMaxGoonClicked() {
     while (buying) {
       buying = buyGoon(1, true);
       goonCount++;
+      if (capped && goonCount + 1 > incomingMaxGoon) {
+        buying = false;
+      }
     }
   }
 
@@ -425,7 +468,7 @@ function updateObservedJobs() {
       }
     });
   }
-  player.observing = observed;
+  player.observing = numberObserved;
 }
 
 function createCrimeHeaders() {
@@ -442,11 +485,18 @@ function createCrimeHeaders() {
   container.appendChild(progressHeader);
   container.appendChild(goonHeader);
 }
+function determineGoonCap(job) {
+  let goonJob = jobs.find((goonJob) => goonJob.name === job);
+  //calculate how many goons can be added without redundency
+  var goonsWanted = goonJob.work * UPDATESPERSECOND; //how many goons are needed to make the job complete every update
+  return goonsWanted;
+}
 
 function capGoons(job) {
   let goonJob = jobs.find((goonJob) => goonJob.name === job);
   //calculate how many goons can be added without redundency
-  var goonsWanted = goonJob.work * UPDATESPERSECOND; //how many goons are needed to make the job complete every update
+  goonsWanted = determineGoonCap(job);
+  determineGoonCap(job);
   while (goonsWanted > player.goonsFree + goonJob.goonsWorking) {
     goonsWanted = Math.ceil(goonsWanted / 2);
     if (goonsWanted == 1) {
@@ -470,7 +520,7 @@ function capGoons(job) {
     }
     goonsNeeded = goonsWanted * 2 - goonJob.goonsWorking - player.goonsFree;
     jobtime = Math.round((goonJob.work / goonJob.goonsWorking) * 100) / 100;
-    if (jobtime == UPDATETIMESECONDS) {
+    if (jobtime <= UPDATETIMESECONDS) {
       goonSubtraction = goonJob.goonsWorking - goonsWanted;
       if (goonSubtraction > 0) {
         $("#messageText").text(
@@ -507,7 +557,7 @@ function capGoons(job) {
             job +
             " complete faster right now, you would need " +
             goonsNeeded +
-            " more goons to make a difference. The current cap you can reach is " +
+            " more free goons to make a difference. The current cap you can reach is " +
             goonsWanted +
             " " +
             job +
@@ -521,7 +571,7 @@ function capGoons(job) {
             job +
             " complete faster right now, you would need " +
             goonsNeeded +
-            " more goons to make a difference. The current cap you can reach is " +
+            " more free goons to make a difference. The current cap you can reach is " +
             goonsWanted +
             " It completes in " +
             jobtime +
@@ -536,6 +586,28 @@ function capGoons(job) {
       }
     }
   }
+}
+
+function roundDownToPowerOfTwo(n) {
+  var power = Math.floor(Math.log2(n));
+  return Math.pow(2, power);
+}
+
+function trySetGoonX(tmpGoonX){
+  tempGoonX = tmpGoonX;
+  if(tempGoonX <= 0){
+    $("#messageText").text("You cannot use 0 or less goons");
+    return;
+  }else if(tempGoonX > GOONMAXMANIPULATE){
+    $("#messageText").text("You cannot use that many goons at once, setting to " + GOONMAXMANIPULATE);
+    tempGoonX = GOONMAXMANIPULATE;
+    player.goonX = tempGoonX;
+    $("#goonXBox").val(player.goonX);
+    return;
+  }
+  player.goonX = tempGoonX
+  $("#messageText").text("You will now use " + player.goonX + " when buying goons or assigning goons to jobs");
+  $("#goonXBox").val(player.goonX);
 }
 
 function createCrimeElements(crimeName) {
@@ -607,13 +679,6 @@ function createCrimeElements(crimeName) {
   };
   capButton.textContent = "CAP";
 
-  console.log(
-    "Creating crime elements for " +
-      crimeName +
-      " goonLabel is " +
-      goonsAssignedText
-  );
-
   // Append the elements to the container
   container.appendChild(observeButton);
   container.appendChild(personalcrime);
@@ -630,9 +695,10 @@ function createCrimeElements(crimeName) {
 function saveGame() {
   localStorage.setItem("player", JSON.stringify(player));
   localStorage.setItem("jobs", JSON.stringify(jobs));
-  console.log("Game saved");
+  $("#messageText").text("Game saved");
   player.hasSaved = true;
 }
+
 function loadGame() {
   if (player.timesShoplifted > GOONUNLOCK) {
     $("#messageText").text(
@@ -642,7 +708,7 @@ function loadGame() {
   }
   player = JSON.parse(localStorage.getItem("player"));
   jobs = JSON.parse(localStorage.getItem("jobs"));
-  console.log("Game loaded");
+  $("#messageText").text("Game loaded. Welcome back " + player.name);
   wakeUp();
   if (player.timesShoplifted > GOONUNLOCK) {
     unlockGoonPage();
@@ -652,15 +718,18 @@ function loadGame() {
       }
       createCrimeElements(jobs[i].name);
     }
+    $('#NextJobName').text(jobs.find((job) => !job.unlocked).display);
     updateGoonNums("all");
     updateObservedJobs();
   }
-  $("#messageText").text("Game loaded");
 }
 // Call the function to create the buttons
 
 //Updating constantly
 window.setInterval(function () {
+  if (!pageLoaded) {
+    return;
+  }
   if ($(".postGoon").is(":visible")) {
     goonsWork();
   }

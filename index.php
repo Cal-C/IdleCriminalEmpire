@@ -31,6 +31,17 @@
     <button type="button" id="goonMenuButton" class = "postGoon" onclick="menuNavClicked(GoonPage)">Hire Goons and Buy Buildings </button>
     <button type="button" id="bribeMenuButton" class = "postBribe" onclick="menuNavClicked(BribePage)">Bribe</button>
 
+    <br>
+    <div id="GoonXMenu" class = "postGoon">
+        <button type="button" onclick="goonXBoxMenuClicked()">Goons To Use</button>
+        <input type = "number" min="1" max="100000" id="goonXBox" value="1"/>
+        <button type="button" onclick="goonXMenuClicked(1)">1</button>
+        <button type="button" onclick="goonXMenuClicked(10)">10</button>
+        <button type="button" onclick="goonXMenuClicked(100)">100</button>
+        <button type="button" onclick="goonXMenuClicked(1000)">1000</button>
+        <button type="button" onclick="goonXMenuClicked(10000)">10k</button>
+        <button type="button" onclick="goonXMenuClicked(100000)">100k</button> 
+    </div>
     <body onload="wakeUp();"></body>
 
     <br>
@@ -41,23 +52,13 @@
         <div><button type="button" id= "starterButton" class="crimeUIButton" onclick="shopliftClicked()">Shoplift </button></div>
         <div id = "crime-container-header" class = "crime-container postGoon"></div>
         <div id = "crime-container" class = "crime-container postGoon">
-            <!-- Shoplift buttions depreciated but can be used as a template for future crimes
-            <div><button type = "button" class="crimeUIButton postGoon" onclick="monitorActivity('Shoplift')" class="postGoon"> &#128065; </div>
-            
-
-            <div><span id = "shoplfitProgressText" class = "crimeProgressText">0/10</span></div>
-            <div class="ldBar label-center" data-type="fill" data-path="M1 1L30 1L30 30L1 30Z" class="ldBar" data-fill="data:ldbar/res,bubble(#248,#fff,50,1)" class = "crimeProgressBar" id = "shopliftProgressBar"> </div>
-            <div><button type = "button" class="crimeUIButton postGoon" onclick="addGoons('Shoplift')" > + </div>
-            <div><button type = "button" class="crimeUIButton postGoon" onclick="removeGoons('Shoplift')" > - </div>
-            <div><button type = "button" class="crimeUIButton postGoon" onclick="capGoons('Shoplift')" > CAP </div>
-            -->
         </div>
     </div>
 
     <div id="GoonPage">
         <h1>Hire: </h1>
         <button type="button" onclick="hireGoonClicked()">Hire Goon</button><button type="button" onclick="hireMaxGoonClicked()">Max Goons</button>  <span>Goon Price: </span><span id="goonPrice">1</span><br>
-        <button type="button" onclick="buyNewJobClicked()">Buy New Crime</button><button type="button" onclick="buyMaxJobs()">Buy Max New Crimes </button><div id="CostOfUnlocking"><span> Cost of Unlocking </span> <span id = "NextJobName">Pickpocket</span> <span> : </span> </div><span id="NextJobCost">err</span>
+        <button type="button" onclick="buyNewJobClicked()">Buy New Crime</button><button type="button" onclick="buyMaxJobs()">Buy Max New Crimes </button> <span> Cost of Unlocking </span> <span id = "NextJobName">Pickpocket</span> <span> : </span> <span id="NextJobCost">err</span>
     </div>
 
     <div id="BribePage">
