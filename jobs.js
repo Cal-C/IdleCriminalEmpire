@@ -9,6 +9,10 @@ let jobs = [
         "observed" : false,
         "unlocked" : true,
         "unlockCost" : 0,
+        "Building" : "Black Market Van",
+        "BuildingsOwned" : 0,
+        "BuildingCost" : 10000,
+        "BuildingIncome" : 100,
     },
     {
         "name" : "Pickpocket",
@@ -20,6 +24,10 @@ let jobs = [
         "observed" : false,
         "unlocked" : false,
         "unlockCost" : 1000,
+        "Building" : "Coinstar Machine",
+        "BuildingsOwned" : 0,
+        "BuildingCost" : 20000,
+        "BuildingIncome" : 225,
     },
     {
         "name" : "Mugging",
@@ -31,6 +39,10 @@ let jobs = [
         "observed" : false,
         "unlocked" : false,
         "unlockCost" : 5000,
+        "Building" : "Alleyway",
+        "BuildingsOwned" : 0,
+        "BuildingCost" : 50000,
+        "BuildingIncome" : 600,
     },
     {
         "name" : "Hotwire",
@@ -42,5 +54,9 @@ let jobs = [
         "observed" : false,
         "unlocked" : false,
         "unlockCost" : 10000,
+        "Building" : "Dealership",
+        "BuildingsOwned" : 0,
+        "BuildingCost" : 100000,
+        "BuildingIncome" : 1400,
     },
 ]

@@ -23,6 +23,7 @@ function wakeUp() {
       " updates per second."
   ); //if you want to see how often the game updates
   console.log("in player: " + player.USD);
+  $("#versionNum").text(player.version);
   
   pageLoaded = true;
 }
@@ -41,6 +42,27 @@ function goonXMenuClicked(tmpGoonX){
 }
 
 //crimes page
+function observeCrime(job) {
+  let goonJob = jobs.find((goonJob) => goonJob.name === job);
+  if(goonJob.observed){
+    goonJob.observed = false;
+    player.observing--;
+    $("#messageText").text("You are no longer observing " + job);
+    $("#"+job+"ObserveButton").text("🕶️");
+    $("#"+job+"payoutText").text(calculatePayout(job));
+    return;
+  }
+  if (player.observing < player.observeMax) {
+    goonJob.observed = true;
+    player.observing++;
+    $("#messageText").text("You are now observing " + job);
+    $("#"+job+"ObserveButton").text("👁️");
+    $("#"+job+"payoutText").text(calculatePayout(job));
+  } else {
+    $("#messageText").text("You are already observing " + player.observeMax + " jobs");
+  }
+}
+
 function personalCrimeButtonClicked(crimeName, preGoon = false) {
   let crime = jobs.find((crime) => crime.name === crimeName);
   crimeworkneeded = crime.work - crime.worked;
@@ -184,6 +206,56 @@ function hireMaxGoonClicked(maxGoon = 2**10, capped = false) {
   }
 }
 
+function buyOneBuilding(jobName, silent = false) {
+  let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
+  if (player.USD >= goonJob.BuildingCost) {
+    player.USD -= goonJob.BuildingCost;
+    goonJob.BuildingsOwned++;
+    goonJob.money += goonJob.BuildingIncome;
+    if(silent){return true;}
+    updateBuildingNumbers(jobName);
+    updateUSD();
+    $("#messageText").text( "You have bought a " + goonJob.Building + " the new payout for completing "+ goonJob.display + " is " + calculatePayout(jobName)+"$");
+    return true;
+  } else {
+    if(silent){return false;}
+    const difference = goonJob.BuildingCost - player.USD;
+    $("#messageText").text(
+      "You do not have enough money to buy a " +
+        goonJob.Building +
+        " right now. You need " +
+        difference +
+        "$ more to buy a " +
+        goonJob.Building
+    );
+    return false;
+  }
+}
+
+function buyMaxBuilding(jobName) {
+  let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
+  var buying = true;
+  var buildingCount = -1;
+  while (buying) {
+    buying = buyOneBuilding(jobName , true);
+    buildingCount++;
+  }
+  if (buildingCount > 1) {
+    $("#messageText").text("You have bought " + buildingCount + " buildings");
+  } else if (buildingCount == 1) {
+    $("#messageText").text("You have bought a building");
+  } else {
+    const difference = goonJob.BuildingCost - player.USD;
+    $("#messageText").text("You do not have enough to buy a building right now. You need " + difference + "$ more to buy " + goonJob.Building);
+  }
+  if (buildingCount > 0) {
+    updateUSD();
+    updateBuildingNumbers(jobName);
+  }
+
+}
+
+
 function buyNewJobClicked() {
   buyNewJob();
 }
@@ -208,24 +280,7 @@ function buyMaxNewJobClicked() {
   }
 }
 
-function observeCrime(job) {
-  let goonJob = jobs.find((goonJob) => goonJob.name === job);
-  if(goonJob.observed){
-    goonJob.observed = false;
-    player.observing--;
-    $("#messageText").text("You are no longer observing " + job);
-    $("#"+job+"ObserveButton").text("🕶️");
-    return;
-  }
-  if (player.observing < player.observeMax) {
-    goonJob.observed = true;
-    player.observing++;
-    $("#messageText").text("You are now observing " + job);
-    $("#"+job+"ObserveButton").text("👁️");
-  } else {
-    $("#messageText").text("You are already observing " + player.observeMax + " jobs");
-  }
-}
+
 
 //helper funcitons
 function unlockGoonPage() {
@@ -314,6 +369,18 @@ function buyGoon(Goonnum = 1, silent = false) {
   }
 }
 
+function updateBuildingNumbers(jobName){
+  let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
+  if (goonJob === undefined || goonJob.Building === undefined || document.getElementById(jobName + "BuildingName") === undefined){
+    return;
+  }
+  goonJob.BuildingCost = calculateBuildingPrice(jobName);
+  $("#"+jobName+"BuildingOwned").text(goonJob.BuildingsOwned);
+  $("#"+jobName+"BuildingCost").text(goonJob.BuildingCost);
+  $("#"+jobName+"BuildingJobImprovement").text(jobName + " $" + goonJob.BuildingIncome);
+  $("#"+jobName+"payoutText").text(calculatePayout(jobName));
+}
+
 function updateUSD() {
   document.getElementById("USDNum").innerHTML = player.USD;
 }
@@ -325,7 +392,7 @@ function updateGoonNums(jobName = " ", silent = false) {
   );
   if (jobName === "all") {
     jobs.forEach((job) => {
-      $("#" + job.name + "goonsAssignedText").text(job.goonsWorking);
+      $("#" + job.name + "goonsAssignedText").text(job.goonsWorking + "/" + determineGoonCap(job.name));
     });
   } else if (jobName != " ") {
     let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
@@ -334,7 +401,7 @@ function updateGoonNums(jobName = " ", silent = false) {
         goonJob.goonsWorking + " goons working on " + jobName
       );
     }
-    $("#" + goonJob.name + "goonsAssignedText").text(goonJob.goonsWorking);
+    $("#" + goonJob.name + "goonsAssignedText").text(goonJob.goonsWorking + "/" + determineGoonCap(jobName));
   }
 }
 
@@ -343,7 +410,10 @@ function updateGoonPrice() {
   $("#goonPrice").text(player.goonPrice);
   return goonPrice;
 }
-
+function calculateBuildingPrice(jobName){
+  let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
+  return Math.round(goonJob.BuildingCost * ((goonJob.BuildingsOwned) + 1));
+}
 function calculateGoonPrice(Goons) {
   return Math.round((GOONBASECOST + (Goons + 1) * 10) * player.goonDiscount);
 }
@@ -382,12 +452,9 @@ function goonsWork() {
 function workHappened(preGoon = false) {
   jobs.forEach((job) => {
     if (job.worked >= job.work) {
-      if (job.observed) {
-        player.USD += job.money + job.money * player.managementMultiplier;
-      } else {
-        player.USD += job.money;
-      }
-
+      var payOut = calculatePayout(job.name);
+      console.log("You have completed " + job.display + " and earned " + payOut);
+      player.USD += payOut;
       job.worked = 0;
       updateUSD();
     }
@@ -397,6 +464,15 @@ function workHappened(preGoon = false) {
   });
   if (!preGoon) {
     updateProgressBars();
+  }
+}
+
+function calculatePayout(jobName) {
+  let payoutJob = jobs.find((payoutJob) => payoutJob.name === jobName);
+  if (payoutJob.observed) {
+    return payoutJob.money + payoutJob.money * player.managementMultiplier;
+  } else {
+    return payoutJob.money;
   }
 }
 
@@ -466,6 +542,7 @@ function updateObservedJobs() {
           return;
         }
       }
+      $("#"+jobName+"payoutText").text(calculatePayout(jobName));
     });
   }
   player.observing = numberObserved;
@@ -476,14 +553,17 @@ function createCrimeHeaders() {
   const observeHeader = document.createElement("div");
   const progressHeader = document.createElement("div");
   const goonHeader = document.createElement("div");
+  const  payoutHeader = document.createElement("div");
 
   observeHeader.textContent = "Personal Actions";
   progressHeader.textContent = "Progress";
   goonHeader.textContent = "Goons";
+  payoutHeader.textContent = "Payout";
 
   container.appendChild(observeHeader);
   container.appendChild(progressHeader);
   container.appendChild(goonHeader);
+  container.appendChild(payoutHeader);
 }
 function determineGoonCap(job) {
   let goonJob = jobs.find((goonJob) => goonJob.name === job);
@@ -626,6 +706,9 @@ function createCrimeElements(crimeName) {
   const addButton = document.createElement("button");
   const subtractButton = document.createElement("button");
   const capButton = document.createElement("button");
+  const payoutText = document.createElement("div");
+
+  const crimeClass = jobs.find((crimeClass) => crimeClass.name === crimeName);
 
   // 🕶️Set properties👓
   observeButton.type = "button";
@@ -634,12 +717,14 @@ function createCrimeElements(crimeName) {
   observeButton.onclick = function () {
     observeCrime(crimeName);
   };
-  observeButton.textContent = "🕶️";
+  if (crimeClass.observed) {
+    observeButton.textContent = "👁️";
+  } else{
+    observeButton.textContent = "🕶️";
+  }
 
   personalcrime.type = "button";
-  personalcrime.textContent = jobs.find(
-    (job) => job.name === crimeName
-  ).display;
+  personalcrime.textContent = crimeClass.display;
   personalcrime.className = "crimeUIButton";
   personalcrime.onclick = function () {
     personalCrimeButtonClicked(crimeName);
@@ -647,14 +732,14 @@ function createCrimeElements(crimeName) {
 
   progressText.id = crimeName + "ProgressText";
   progressText.textContent =
-    "0/" + jobs.find((job) => job.name === crimeName).work;
+    "0/" + crimeClass.work;
   progressText.className = "progressText crimeProgressText";
 
   progressBar.id = crimeName + "ProgressBar";
   progressBar.className = "ldBar label-center";
   progressBar.style = "width: 38px; height: 38px;";
 
-  goonsAssignedText.textContent = "0";
+  goonsAssignedText.textContent = crimeClass.goonsWorking + "/" + determineGoonCap(crimeName);
   goonsAssignedText.className = "goonsAssignedText";
   goonsAssignedText.id = crimeName + "goonsAssignedText";
 
@@ -679,6 +764,10 @@ function createCrimeElements(crimeName) {
   };
   capButton.textContent = "CAP";
 
+  payoutText.textContent = calculatePayout(crimeName);
+  payoutText.className = "payoutText";
+  payoutText.id = crimeName + "payoutText";
+
   // Append the elements to the container
   container.appendChild(observeButton);
   container.appendChild(personalcrime);
@@ -688,8 +777,70 @@ function createCrimeElements(crimeName) {
   container.appendChild(addButton);
   container.appendChild(subtractButton);
   container.appendChild(capButton);
+  container.appendChild(payoutText);
 
   createCrimeProgressBar(crimeName);
+  createBuildingElements(crimeName);
+}
+
+function createBuildingElements(crimeName) {
+  const container = document.getElementById("Building-container");
+
+
+  var crimeClass = jobs.find((crimeClass) => crimeClass.name === crimeName);
+  if (crimeClass === undefined) {
+    console.log("Error: " + crimeName + " is not a valid crime");
+    return;
+  }else{
+    if (document.getElementById(crimeName + "BuildingName")) {
+      return;
+    }
+    console.log("Creating building elements for " + JSON.stringify(crimeClass) + crimeClass.Building);
+  }
+
+  const buildingName = document.createElement("div");
+  const buildingJobImprovement = document.createElement("div");
+  const buildingCost = document.createElement("div");
+  const BuildingOwned = document.createElement("div");
+  const buyMax = document.createElement("button");
+  const buyOne = document.createElement("button");
+
+  buildingName.textContent = crimeClass.Building;
+  buildingName.id = crimeName + "BuildingName";
+  buildingName.className = "buildingName";
+
+  buildingJobImprovement.textContent = crimeName + " $" + crimeClass.BuildingIncome;
+  buildingJobImprovement.id = crimeName + "BuildingJobImprovement";
+  buildingJobImprovement.className = "buildingJobImprovement";
+
+  buildingCost.textContent =  crimeClass.BuildingCost;
+  buildingCost.id = crimeName + "BuildingCost";
+  buildingCost.className = "buildingCost";
+
+  BuildingOwned.textContent = crimeClass.BuildingsOwned;
+  BuildingOwned.id = crimeName + "BuildingOwned";
+  BuildingOwned.className = "buildingOwned";
+
+  buyMax.type = "button";
+  buyMax.className = crimeName + "buildingMaxButton";
+  buyMax.onclick = function () {
+    buyMaxBuilding(crimeName);
+  };
+  buyMax.textContent = "Max";
+
+  buyOne.type = "button";
+  buyOne.className = crimeName + "buildingOneButton";
+  buyOne.onclick = function () {
+    buyOneBuilding(crimeName);
+  };
+  buyOne.textContent = "1";
+
+  container.appendChild(buildingName);
+  container.appendChild(buildingJobImprovement);
+  container.appendChild(buildingCost);
+  container.appendChild(BuildingOwned);
+  container.appendChild(buyMax);
+  container.appendChild(buyOne);
 }
 
 function saveGame() {
@@ -706,7 +857,16 @@ function loadGame() {
     );
     return;
   }
-  player = JSON.parse(localStorage.getItem("player"));
+  playerSaved = JSON.parse(localStorage.getItem("player"));
+  if (playerSaved === null) {
+    $("#messageText").text("No game data saved");
+    return;
+  }
+  if(playerSaved.version != player.version){
+    if(!confirm("You are trying to load a game from a different version of the game. Doing this may break the game. Are you sure you want to continue?")){
+      return;
+    }
+  }
   jobs = JSON.parse(localStorage.getItem("jobs"));
   $("#messageText").text("Game loaded. Welcome back " + player.name);
   wakeUp();

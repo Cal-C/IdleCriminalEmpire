@@ -8,16 +8,37 @@
     background-color:#c61bf5
 }
 
+.building-container {
+    display: grid;
+    gap: 10px;
+    background-color: #2e0a38;
+    padding: 10px;
+  }
+.building-container > div {
+    background-color:#c61bf5
+}
+
+
+#Building-container {
+  display: grid;
+  grid-template-columns: 175px 275px 75px 75px 60px 30px;
+}
+#Building-container-header {
+  display: grid;
+  grid-template-columns: 175px 275px 75px 75px 125px;
+  
+}
+
 #crime-container {
   display: grid;
-  grid-template-columns: 40px 200px 200px 50px 200px 30px 30px 50px;
+  grid-template-columns: 40px 200px 200px 50px 200px 30px 30px 50px 100px;
 }
 #crime-container > div {
   min-width: 0;
 }
 
 #crime-container-header{
-  grid-template-columns: 250px 250px 350px;
+  grid-template-columns: 250px 250px 350px 100px;
 }
 
 .crimeUIButton{

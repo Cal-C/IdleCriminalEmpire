@@ -56,9 +56,17 @@
     </div>
 
     <div id="GoonPage">
-        <h1>Hire: </h1>
+        <h1>Hire and Build</h1>
         <button type="button" onclick="hireGoonClicked()">Hire Goon</button><button type="button" onclick="hireMaxGoonClicked()">Max Goons</button>  <span>Goon Price: </span><span id="goonPrice">1</span><br>
-        <button type="button" onclick="buyNewJobClicked()">Buy New Crime</button><button type="button" onclick="buyMaxJobs()">Buy Max New Crimes </button> <span> Cost of Unlocking </span> <span id = "NextJobName">Pickpocket</span> <span> : </span> <span id="NextJobCost">err</span>
+        <button type="button" onclick="buyNewJobClicked()">Buy New Crime</button><button type="button" onclick="buyMaxNewJobClicked()">Buy Max New Crimes </button> <span> Cost of Unlocking </span> <span id = "NextJobName">Pickpocket</span> <span> : </span> <span id="NextJobCost">err</span>
+        <br> <div id="Building-container-header" class = "building-container postGoon">
+                <div>Building:</div> 
+                <div>Improves Job Payout By:</div>
+                <div>Cost:</div>
+                <div>Owned:</div>
+                <div>Buy Buttons:</div>
+        </div>
+        <div id="Building-container" class = "building-container postGoon"> </div>
     </div>
 
     <div id="BribePage">
@@ -69,11 +77,11 @@
     <div id= "SaveLoad">
         <button type="button" onclick="saveGame()">Save</button>
         <button type="button" onclick="loadGame()">Load</button>
-        <span> Warning: Saving Uses 🍪Cookies🍪 <!--clicker was the og --!> </span>
+        <span> Warning: Saving Uses 🍪Cookies🍪  </span>
     </div>
 
     <br>
-    <span> Version alpha <!-- or sigma who is the ultimate male?!?! --> 0.0.1.5 </span>
+    <span> Version </span> <span id="versionNum"> Alpha 0.0.1.99999999 </span>
     <?php
     echo "This server is running PHP: ";
     echo phpversion();

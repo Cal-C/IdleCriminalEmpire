@@ -19,4 +19,5 @@ var player = {
     goonX: 1,
     timesShoplifted: 0,
     hasSaved : false,
+    version : "Alpha 0.0.2"
 };
