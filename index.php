@@ -81,11 +81,7 @@
     </div>
 
     <br>
-    <span> Version </span> <span id="versionNum"> Alpha 0.0.1.99999999 </span>
-    <?php
-    echo "This server is running PHP: ";
-    echo phpversion();
-    ?>
+    <span> Version </span> <span id="versionNum"> error </span>
 
 </body>
 

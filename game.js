@@ -22,7 +22,6 @@ function wakeUp() {
       UPDATESPERSECOND +
       " updates per second."
   ); //if you want to see how often the game updates
-  console.log("in player: " + player.USD);
   $("#versionNum").text(player.version);
   
   pageLoaded = true;
@@ -106,7 +105,7 @@ function addGoons(job) {
     updateGoonNums(goonJob.name);
   } else {
     $("#messageText").text(
-      "You do not have " + player.goonX + " goons free right now. Adding all "+ player.goonsFree  +" free goons to " + goonJob.display + " instead."
+      "You do not have " + summarizeNumber(player.goonX) + " goons free right now. Adding all "+ summarizeNumber(player.goonsFree)  +" free goons to " + summarizeNumber(goonJob.display) + " instead."
     );
     goonJob.goonsWorking = goonJob.goonsWorking + player.goonsFree;
     player.goonsFree = 0;
@@ -114,14 +113,14 @@ function addGoons(job) {
   }
   if (goonJob.goonsWorking > determineGoonCap(job)) {
     var oldtext = $("#messageText").text();
-    $("#messageText").text(oldtext + ' You have added too many goons to ' + goonJob.display + ' it will not make it go faster. Consider capping the goons on ' + goonJob.display + ' to make the most of your goons.');
+    $("#messageText").text(oldtext + ' You have added too many goons to ' + summarizeNumber(goonJob.display) + ' it will not make it go faster. Consider capping the goons on ' + summarizeNumber(goonJob.display) + ' to make the most of your goons.');
   }
 }
 
 function removeGoons(job) {
   let goonJob = jobs.find((goonJob) => goonJob.name === job);
   if (goonJob.goonsWorking == 0) {
-    $("#messageText").text("You do not have any goons working on " + goonJob.display + " right now");
+    $("#messageText").text("You do not have any goons working on " + summarizeNumber(goonJob.display) + " right now");
     return;
   }
   if (goonJob.goonsWorking - player.goonX >= 0) {
@@ -186,17 +185,17 @@ function hireMaxGoonClicked(maxGoon = 2**10, capped = false) {
     }
   }
 
-  console.log("You bought " + goonCount + " goons");
+  console.log("You bought " + summarizeNumber(goonCount) + " goons");
 
   if (goonCount > 1) {
-    $("#messageText").text("You have hired " + goonCount + " Goons");
+    $("#messageText").text("You have hired " + summarizeNumber(goonCount) + " Goons");
   } else if (goonCount == 1) {
     $("#messageText").text("You have hired a Goon");
   } else {
     cashNeeded = player.goonPrice - player.USD;
     $("#messageText").text(
       "You do not have enough money to hire a Goon right now. You need " +
-        cashNeeded +
+      summarizeNumber(cashNeeded) +
         "$ more to hire a Goon"
     );
   }
@@ -215,7 +214,7 @@ function buyOneBuilding(jobName, silent = false) {
     if(silent){return true;}
     updateBuildingNumbers(jobName);
     updateUSD();
-    $("#messageText").text( "You have bought a " + goonJob.Building + " the new payout for completing "+ goonJob.display + " is " + calculatePayout(jobName)+"$");
+    $("#messageText").text( "You have bought a " + goonJob.Building + " the new payout for completing "+ goonJob.display + " is " + summarizeNumber(calculatePayout(jobName))+"$");
     return true;
   } else {
     if(silent){return false;}
@@ -224,7 +223,7 @@ function buyOneBuilding(jobName, silent = false) {
       "You do not have enough money to buy a " +
         goonJob.Building +
         " right now. You need " +
-        difference +
+        summarizeNumber(difference) +
         "$ more to buy a " +
         goonJob.Building
     );
@@ -241,12 +240,12 @@ function buyMaxBuilding(jobName) {
     buildingCount++;
   }
   if (buildingCount > 1) {
-    $("#messageText").text("You have bought " + buildingCount + " buildings");
+    $("#messageText").text("You have bought " + summarizeNumber(buildingCount) + " buildings");
   } else if (buildingCount == 1) {
     $("#messageText").text("You have bought a building");
   } else {
     const difference = goonJob.BuildingCost - player.USD;
-    $("#messageText").text("You do not have enough to buy a building right now. You need " + difference + "$ more to buy " + goonJob.Building);
+    $("#messageText").text("You do not have enough to buy a building right now. You need " + summarizeNumber(difference) + "$ more to buy " + goonJob.Building);
   }
   if (buildingCount > 0) {
     updateUSD();
@@ -304,7 +303,7 @@ function buyNewJob() {
       "You have unlocked the ability to " +
         job.display +
         " for " +
-        player.nextJobCost +
+        summarizeNumber(player.nextJobCost) +
         "$"
     );
     updateCostNewJob();
@@ -316,7 +315,7 @@ function buyNewJob() {
       "You do not have enough money to unlock " +
         job.display +
         " right now. You need " +
-        cashNeeded +
+        summarizeNumber(cashNeeded) +
         "$ more to unlock " +
         job.display
     );
@@ -355,14 +354,14 @@ function buyGoon(Goonnum = 1, silent = false) {
       if (Goonnum != 1) {
         document.getElementById("messageText").innerHTML =
           "Sorry you need " +
-          player.goonPrice * Goonnum +
+          summarizeNumber(player.goonPrice) * Goonnum +
           "$ to hire " +
           Goonnum +
           " Goons right now";
       }
       if (Goonnum == 1) {
         document.getElementById("messageText").innerHTML =
-          "Sorry you need " + player.goonPrice + "$ to hire a Goon right now";
+          "Sorry you need " + summarizeNumber(player.goonPrice) + "$ to hire a Goon right now";
       }
     }
     return false;
@@ -375,14 +374,14 @@ function updateBuildingNumbers(jobName){
     return;
   }
   goonJob.BuildingCost = calculateBuildingPrice(jobName);
-  $("#"+jobName+"BuildingOwned").text(goonJob.BuildingsOwned);
-  $("#"+jobName+"BuildingCost").text(goonJob.BuildingCost);
-  $("#"+jobName+"BuildingJobImprovement").text(jobName + " $" + goonJob.BuildingIncome);
-  $("#"+jobName+"payoutText").text(calculatePayout(jobName));
+  $("#"+jobName+"BuildingOwned").text(summarizeNumber(goonJob.BuildingsOwned));
+  $("#"+jobName+"BuildingCost").text(summarizeNumber(goonJob.BuildingCost));
+  $("#"+jobName+"BuildingJobImprovement").text(jobName + " $" + summarizeNumber(goonJob.BuildingIncome));
+  $("#"+jobName+"payoutText").text(summarizeNumber(calculatePayout(jobName)));
 }
 
 function updateUSD() {
-  document.getElementById("USDNum").innerHTML = player.USD;
+  document.getElementById("USDNum").innerHTML = summarizeNumber(player.USD);
 }
 
 function updateGoonNums(jobName = " ", silent = false) {
@@ -392,7 +391,7 @@ function updateGoonNums(jobName = " ", silent = false) {
   );
   if (jobName === "all") {
     jobs.forEach((job) => {
-      $("#" + job.name + "goonsAssignedText").text(job.goonsWorking + "/" + determineGoonCap(job.name));
+      $("#" + job.name + "goonsAssignedText").text(summarizeNumber(job.goonsWorking) + "/" + summarizeNumber(determineGoonCap(job.name)));
     });
   } else if (jobName != " ") {
     let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
@@ -401,13 +400,13 @@ function updateGoonNums(jobName = " ", silent = false) {
         goonJob.goonsWorking + " goons working on " + jobName
       );
     }
-    $("#" + goonJob.name + "goonsAssignedText").text(goonJob.goonsWorking + "/" + determineGoonCap(jobName));
+    $("#" + goonJob.name + "goonsAssignedText").text(summarizeNumber(goonJob.goonsWorking) + "/" + summarizeNumber(determineGoonCap(jobName)));
   }
 }
 
 function updateGoonPrice() {
   player.goonPrice = calculateGoonPrice(player.goonsTotal);
-  $("#goonPrice").text(player.goonPrice);
+  $("#goonPrice").text(summarizeNumber(player.goonPrice));
   return goonPrice;
 }
 function calculateBuildingPrice(jobName){
@@ -459,7 +458,7 @@ function workHappened(preGoon = false) {
       updateUSD();
     }
     $("#" + job.name + "ProgressText").text(
-      Math.round(job.worked * 10) / 10 + "/" + job.work
+      summarizeNumber(Math.round(job.worked * 10) / 10) + "/" + summarizeNumber(job.work)
     );
   });
   if (!preGoon) {
@@ -482,7 +481,7 @@ function updateCostNewJob() {
   if (nextJob && player.nextJobName != nextJob.name) {
     player.nextJobName = nextJob.name;
     player.nextJobCost = nextJob.unlockCost;
-    $("#NextJobCost").text(player.nextJobCost);
+    $("#NextJobCost").text(summarizeNumber(player.nextJobCost));
     $("#NextJobName").text(nextJob.display);
     return;
   } else if (!nextJob) {
@@ -495,11 +494,11 @@ function updateCostNewJob() {
 }
 
 function updateCurrentEnergy() {
-  $("#EnergyNum").text(Math.round(player.energy));
+  $("#EnergyNum").text(summarizeNumber(Math.round(player.energy)));
 }
 
 function updateEnergyMax() {
-  $("#EnergyMaxNum").text(Math.round(player.energyMax));
+  $("#EnergyMaxNum").text(summarizeNumber(Math.round(player.energyMax)));
 }
 
 function updateProgressBars() {
@@ -542,7 +541,7 @@ function updateObservedJobs() {
           return;
         }
       }
-      $("#"+jobName+"payoutText").text(calculatePayout(jobName));
+      $("#"+jobName+"payoutText").text(summarizeNumber(calculatePayout(jobName)));
     });
   }
   player.observing = numberObserved;
@@ -588,7 +587,7 @@ function capGoons(job) {
     goonJob.goonsWorking += goonsAssignment;
     player.goonsFree -= goonsAssignment;
     $("#messageText").text(
-      "You have capped " + job + " with " + goonJob.goonsWorking + " goons"
+      "You have capped " + job + " with " + summarizeNumber(goonJob.goonsWorking) + " goons"
     );
     updateGoonNums(goonJob.name);
   } else {
@@ -607,13 +606,13 @@ function capGoons(job) {
           "You have reached cap for " +
             job +
             " with " +
-            goonJob.goonsWorking +
+            summarizeNumber(goonJob.goonsWorking) +
             " goons, but it could have been done with " +
             goonsWanted +
             " goons, it completes in " +
-            jobtime +
+            summarizeNumber(jobtime) +
             " seconds. " +
-            goonSubtraction +
+            summarizeNumber(goonSubtraction) +
             " goons have been removed for optimal goon usage"
         );
         goonJob.goonsWorking -= goonSubtraction;
@@ -624,9 +623,9 @@ function capGoons(job) {
           "You have reached cap for " +
             job +
             " with " +
-            goonJob.goonsWorking +
+            summarizeNumber(goonJob.goonsWorking) +
             " goons, it completes in " +
-            jobtime +
+            summarizeNumber(jobtime) +
             " seconds."
         );
       }
@@ -636,13 +635,13 @@ function capGoons(job) {
           "You do not have enough goons to make " +
             job +
             " complete faster right now, you would need " +
-            goonsNeeded +
+            summarizeNumber(goonsNeeded) +
             " more free goons to make a difference. The current cap you can reach is " +
-            goonsWanted +
+            summarizeNumber(goonsWanted) +
             " " +
             job +
             " completes in " +
-            jobtime +
+            summarizeNumber(jobtime) +
             " seconds."
         );
       } else {
@@ -650,17 +649,17 @@ function capGoons(job) {
           "You do not have enough goons to make " +
             job +
             " complete faster right now, you would need " +
-            goonsNeeded +
+            summarizeNumber(goonsNeeded) +
             " more free goons to make a difference. The current cap you can reach is " +
-            goonsWanted +
+            summarizeNumber(goonsWanted) +
             " It completes in " +
-            jobtime +
+            summarizeNumber(jobtime) +
             " seconds. You now have " +
-            goonJob.goonsWorking +
+            summarizeNumber(oonJob.goonsWorking) +
             " goons working on " +
             job +
             " after reassigning " +
-            goonAssignment +
+            summarizeNumber(goonAssignment) +
             " goons"
         );
       }
@@ -732,14 +731,14 @@ function createCrimeElements(crimeName) {
 
   progressText.id = crimeName + "ProgressText";
   progressText.textContent =
-    "0/" + crimeClass.work;
+   summarizeNumber(crimeClass.worked) + "/" + summarizeNumber(crimeClass.work);
   progressText.className = "progressText crimeProgressText";
 
   progressBar.id = crimeName + "ProgressBar";
   progressBar.className = "ldBar label-center";
   progressBar.style = "width: 38px; height: 38px;";
 
-  goonsAssignedText.textContent = crimeClass.goonsWorking + "/" + determineGoonCap(crimeName);
+  goonsAssignedText.textContent = summarizeNumber(crimeClass.goonsWorking) + "/" + summarizeNumber(determineGoonCap(crimeName));
   goonsAssignedText.className = "goonsAssignedText";
   goonsAssignedText.id = crimeName + "goonsAssignedText";
 
@@ -809,15 +808,15 @@ function createBuildingElements(crimeName) {
   buildingName.id = crimeName + "BuildingName";
   buildingName.className = "buildingName";
 
-  buildingJobImprovement.textContent = crimeName + " $" + crimeClass.BuildingIncome;
+  buildingJobImprovement.textContent = crimeName + " $" + summarizeNumber(crimeClass.BuildingIncome);
   buildingJobImprovement.id = crimeName + "BuildingJobImprovement";
   buildingJobImprovement.className = "buildingJobImprovement";
 
-  buildingCost.textContent =  crimeClass.BuildingCost;
+  buildingCost.textContent =  summarizeNumber(crimeClass.BuildingCost);
   buildingCost.id = crimeName + "BuildingCost";
   buildingCost.className = "buildingCost";
 
-  BuildingOwned.textContent = crimeClass.BuildingsOwned;
+  BuildingOwned.textContent = summarizeNumber(crimeClass.BuildingsOwned);
   BuildingOwned.id = crimeName + "BuildingOwned";
   BuildingOwned.className = "buildingOwned";
 
@@ -843,6 +842,27 @@ function createBuildingElements(crimeName) {
   container.appendChild(buyOne);
 }
 
+
+function summarizeNumber(number) {
+  const ranges = [
+    { divider: 1e18, suffix: 'Qt', fullWord: 'Quintillion', fullWordPlural: 'Quintillions' },
+    { divider: 1e15, suffix: 'Q', fullWord: 'Quadrillion', fullWordPlural: 'Quadrillions' },
+    { divider: 1e12, suffix: 'T', fullWord: 'Trillion', fullWordPlural: 'Trillions' },
+    { divider: 1e9, suffix: 'B', fullWord: 'Billion', fullWordPlural: 'Billions' },
+    { divider: 1e6, suffix: 'M', fullWord: 'Million', fullWordPlural: 'Millions' },
+    { divider: 1e3, suffix: 'K', fullWord: 'Thousand', fullWordPlural: 'Thousands' }
+  ];
+
+  for (let i = 0; i < ranges.length; i++) {
+    if (number >= ranges[i].divider) {
+      return (number / ranges[i].divider).toFixed(2) + ranges[i].suffix;
+    }
+  }
+
+  return number.toString();
+}
+
+
 function saveGame() {
   localStorage.setItem("player", JSON.stringify(player));
   localStorage.setItem("jobs", JSON.stringify(jobs));
@@ -863,10 +883,11 @@ function loadGame() {
     return;
   }
   if(playerSaved.version != player.version){
-    if(!confirm("You are trying to load a game from a different version of the game. Doing this may break the game. Are you sure you want to continue?")){
+    if(!confirm("You are trying to load a game from version "+ playerSaved.version + "of the game. Doing this may break the game as it is currently in version "+ player.version +". Are you sure you want to continue?")){
       return;
     }
   }
+  player = playerSaved;
   jobs = JSON.parse(localStorage.getItem("jobs"));
   $("#messageText").text("Game loaded. Welcome back " + player.name);
   wakeUp();
@@ -878,7 +899,10 @@ function loadGame() {
       }
       createCrimeElements(jobs[i].name);
     }
-    $('#NextJobName').text(jobs.find((job) => !job.unlocked).display);
+    nextJob = jobs.find((job) => !job.unlocked);
+    if(nextJob != undefined){
+      $('#NextJobName').text(nextJob.display);
+    }
     updateGoonNums("all");
     updateObservedJobs();
   }
