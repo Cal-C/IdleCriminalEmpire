@@ -151,11 +151,11 @@ function hireGoonClicked() {
   }
   buyGoon();
 }
-function hireMaxGoonClicked(maxGoon = 2**10, capped = false) {
+function hireMaxGoonClicked(maxGoon = 2**20, capped = false) {
   var buying = true;
   var goonCount = 0;
   const incomingMaxGoon = maxGoon;
-  if(maxGoon != 2**10){
+  if(maxGoon != 2**20){
     maxGoon = roundDownToPowerOfTwo(maxGoon);
   }
   if (player.USD / player.goonPrice < maxGoon) {
@@ -185,6 +185,7 @@ function hireMaxGoonClicked(maxGoon = 2**10, capped = false) {
       }
     }
   }
+
 
 
   if (goonCount > 1) {
@@ -563,9 +564,11 @@ function buyNewJob() {
     return false;
   }
 }
+
 function buyGoon(Goonnum = 1, silent = false) {
   var transactionPrice = 0;
   if (Goonnum > 1) {
+    /* legacy goon price calculation, if the new one is wrong, this can be used to compare
     for (
       var transactionGoon = 0;
       transactionGoon < Goonnum;
@@ -575,6 +578,26 @@ function buyGoon(Goonnum = 1, silent = false) {
         player.goonsTotal + transactionGoon
       );
     }
+    */
+    transactionPrice2 = calculateGoonSummationPrice(player.goonsTotal, Goonnum+player.goonsTotal-1);
+    console.log("The price of " + summarizeNumber(Goonnum) + " goons is " + summarizeNumber(transactionPrice2));
+    transactionPrice = transactionPrice2;
+    /* error checking for the new goon price calculation. comment out if not needed
+    if (transactionPrice != transactionPrice2) {
+      ratio = transactionPrice / transactionPrice2;
+      console.log(
+        "Error in calculating the price of " +
+          Goonnum +
+          " goons. " +
+          transactionPrice +
+          " != " +
+          transactionPrice2
+          + " ratio: " + ratio
+      );
+    }else{
+      console.log("The price of " + Goonnum + " goons is " + transactionPrice2);
+    }
+    */
   } else {
     transactionPrice = player.goonPrice;
   }
@@ -650,6 +673,29 @@ function updateGoonNums(jobName = " ", silent = false) {
     $("#" + goonJob.name + "goonsAssignedText").text(summarizeNumber(goonJob.goonsWorking) + "/" + summarizeNumber(determineGoonCap(jobName)));
   }
 }
+function calculateGoonSummationPrice(start, end) {
+  if (start < 0 || end < 0 || start > end) {
+    console.error('Invalid inputs to calculateGoonSummationPrice:', start, end);
+    return;
+  }
+
+  const firstTerm = calculateGoonPrice(start);
+  const lastTerm = calculateGoonPrice(end);
+
+  if (firstTerm < 0 || lastTerm < 0) {
+    console.error('Negative goon price:', firstTerm, lastTerm);
+    return;
+  }
+
+  const numberOfTerms = end - start + 1;
+  const totalCost = numberOfTerms / 2 * (firstTerm + lastTerm);
+
+  return Math.round(totalCost);
+}
+
+function calculateGoonPrice(Goons) {
+  return Math.round((GOONBASECOST + (Goons + 1) * 10) * player.goonDiscount);
+}
 
 function updateGoonPrice() {
   player.goonPrice = calculateGoonPrice(player.goonsTotal);
@@ -660,9 +706,7 @@ function calculateBuildingPrice(jobName){
   let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
   return Math.round(goonJob.BuildingCost * ((goonJob.BuildingsOwned) + 1));
 }
-function calculateGoonPrice(Goons) {
-  return Math.round((GOONBASECOST + (Goons + 1) * 10) * player.goonDiscount);
-}
+
 
 function hideAllPages(exception = "") {
   const Pages = ["CrimePage", "GoonPage", "BribePage"];
