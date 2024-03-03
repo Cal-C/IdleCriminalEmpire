@@ -19,5 +19,15 @@ var player = {
     goonX: 1,
     timesShoplifted: 0,
     hasSaved : false,
-    version : "Alpha 0.0.2.1"
+    heatMultiplier: 1,
+    heat: 0,
+    heatDecay: 1,
+    bribeDiscount: 1,
+    bribeRefreshMultiplier: 1,
+    heatToImprison: 100,
+    bribePercent: 50,
+    nextBribeName : "Bribe Cops",
+    nextBribeCost : 0,
+    jobOpportunity : ["Shoplift"],
+    version : "Alpha 0.0.2.5"
 };

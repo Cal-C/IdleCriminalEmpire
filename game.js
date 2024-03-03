@@ -5,24 +5,22 @@ const UPDATESPERSECOND = 1 / UPDATETIMESECONDS;
 const GOONUNLOCK = 2;
 const GOONMAXMANIPULATE = 1000000;
 
+var ticksSinceLastBribeUpdate=0;
 var pageLoaded = false;
 
 function wakeUp() {
   //sheeple
   hideAllPages(document.getElementById("CrimePage")); //hiding all pages but the starting crime page
   updateGoonPrice();
-  hideLockedElements();
+  
   updateCurrentEnergy();
   updateEnergyMax();
   updateCostNewJob();
-  console.log(
-    "Updating every " +
-      UPDATETIMESECONDS +
-      " seconds, so there are " +
-      UPDATESPERSECOND +
-      " updates per second."
-  ); //if you want to see how often the game updates
+
+  hideLockedElements();
+
   $("#versionNum").text(player.version);
+  
   
   pageLoaded = true;
 }
@@ -40,15 +38,17 @@ function goonXMenuClicked(tmpGoonX){
   trySetGoonX(tmpGoonX);
 }
 
+//bribes page
 //crimes page
 function observeCrime(job) {
   let goonJob = jobs.find((goonJob) => goonJob.name === job);
   if(goonJob.observed){
     goonJob.observed = false;
     player.observing--;
-    $("#messageText").text("You are no longer observing " + job);
+    $("#messageText").text("You are no longer observing " + goonJob.display);
     $("#"+job+"ObserveButton").text("🕶️");
-    $("#"+job+"payoutText").text(calculatePayout(job));
+    $("#"+job+"payoutText").text(summarizeNumber(calculatePayout(job)));
+    calculateJobOpportunity();
     return;
   }
   if (player.observing < player.observeMax) {
@@ -56,7 +56,8 @@ function observeCrime(job) {
     player.observing++;
     $("#messageText").text("You are now observing " + job);
     $("#"+job+"ObserveButton").text("👁️");
-    $("#"+job+"payoutText").text(calculatePayout(job));
+    $("#"+job+"payoutText").text(summarizeNumber(calculatePayout(job)));
+    calculateJobOpportunity();
   } else {
     $("#messageText").text("You are already observing " + player.observeMax + " jobs");
   }
@@ -185,7 +186,6 @@ function hireMaxGoonClicked(maxGoon = 2**10, capped = false) {
     }
   }
 
-  console.log("You bought " + summarizeNumber(goonCount) + " goons");
 
   if (goonCount > 1) {
     $("#messageText").text("You have hired " + summarizeNumber(goonCount) + " Goons");
@@ -211,7 +211,9 @@ function buyOneBuilding(jobName, silent = false) {
     player.USD -= goonJob.BuildingCost;
     goonJob.BuildingsOwned++;
     goonJob.money += goonJob.BuildingIncome;
-    if(silent){return true;}
+    if(silent){
+      goonJob.BuildingCost = calculateBuildingPrice(jobName);
+      return true;}
     updateBuildingNumbers(jobName);
     updateUSD();
     $("#messageText").text( "You have bought a " + goonJob.Building + " the new payout for completing "+ goonJob.display + " is " + summarizeNumber(calculatePayout(jobName))+"$");
@@ -266,7 +268,6 @@ function buyMaxNewJobClicked() {
     buying = buyNewJob();
     jobCount++;
   }
-  console.log("You bought " + jobCount + " jobs");
   if (jobCount > 1) {
     $("#messageText").text("You have unlocked " + jobCount + " jobs");
   } else if (jobCount == 1) {
@@ -279,7 +280,61 @@ function buyMaxNewJobClicked() {
   }
 }
 
+//bribe page
+function buyNewBribe() {
+  if (player.nextBribeCost > player.USD) {
+    $("#messageText").text(
+      "You do not have enough money to unlock " +
+        player.nextBribeName +
+        " right now. You need " +
+        summarizeNumber(player.nextBribeCost) +
+        "$ more to unlock " +
+        player.nextBribeName
+    );
+    return false;
+  }
+  player.USD -= player.nextBribeCost;
+  let bribe = bribes.find((bribe) => bribe.name === player.nextBribeName);
+  if(bribe === null || bribe === undefined || bribe.unlocked === true){
+    return false;
+  }
+  bribe.unlocked = true;
+  updateNextBribe();
+  updateUSD();
+  $("#messageText").text(
+    "You have unlocked the ability to " +
+      bribe.display +
+      " for " +
+      summarizeNumber(bribe.unlockCost) +
+      "$"
+  );
 
+  createBribeElements(bribe.name);
+  return true;
+}
+
+function buyMaxNewBribe() {
+  var buying = true;
+  var bribeCount = -1;
+  while (buying) {
+    buying = buyNewBribe();
+    bribeCount++;
+  }
+  if (bribeCount > 1) {
+    $("#messageText").text("You have unlocked " + bribeCount + " bribes");
+  } else if (bribeCount == 1) {
+    $("#messageText").text("You have unlocked a bribe");
+  } else {
+    if (player.nextBribeName == " ") {
+      $("#messageText").text("You have unlocked all the bribes");
+      return;
+    }
+    $("#messageText").text("You do not have enough money to unlock " + player.nextBribeName + " right now. You need " + summarizeNumber(player.nextBribeCost) + "$to unlock " + player.nextBribeName);
+  }
+  if (bribeCount > 0) {
+    updateUSD();
+  }
+}
 
 //helper funcitons
 function unlockGoonPage() {
@@ -288,6 +343,187 @@ function unlockGoonPage() {
   $("#starterButton").hide();
   createCrimeHeaders();
 }
+function updateHeatNumbers(){
+  $("#heatNums").text(summarizeNumber(player.heat) +"("+summarizeNumber(player.goonsImprisoned) +")");
+
+}
+
+function updateNextBribe(){
+  cheapestBribeName = findCheapestLockedBribe();
+  let cheapestBribe = bribes.find((bribe) => bribe.name === cheapestBribeName);
+  if(cheapestBribe === null || cheapestBribeName === null){
+    $("#NextBribeCost").text("No more bribes to unlock");
+    $("#NextBribeName").text("");
+    $("#CostOfBribingText").hide();
+    player.nextBribeName = " ";
+    player.nextBribeCost = 0;
+    return;
+  }else{
+    player.nextBribeName = cheapestBribe.name;
+    player.nextBribeCost = cheapestBribe.unlockCost;
+    $("#NextBribeCost").text(summarizeNumber(player.nextBribeCost));
+    $("#CostOfBribingText").text("Cost of unlocking "+cheapestBribe.display+": ");
+  
+  }
+}
+
+function findCheapestLockedBribe() {
+  let cheapestBribe = null;
+
+  bribes.forEach((bribe) => {
+    if (!bribe.unlocked) {
+      if (cheapestBribe === null || bribe.cost < cheapestBribe.cost) {
+        cheapestBribe = bribe;
+      }
+    }
+  });
+  if(cheapestBribe === null){
+    return null;
+  }
+  console.log(cheapestBribe.name + " is the cheapest locked bribe with a unlocked value of " + cheapestBribe.unlocked);
+  return cheapestBribe.name;
+}
+
+function updateBribeSliderText(){
+  $("#bribeCashPercentText").text(player.bribePercent);
+  $("#bribeCashAmountText").text(summarizeNumber(calculateBribeUSD()));
+}
+
+function unlockBribePage(silent = false) {
+  $(".postBribe").show();
+  let bribePercentSlider = document.getElementById('bribePercentSlider');
+  bribePercentSlider.oninput = function() {
+    player.bribePercent = this.value;
+    updateBribeSliderText();
+    updateAllBribeHeatText();
+  }
+  job = jobs.find((job) => job.name === player.nextJobName);
+  if(!silent){
+    $("#messageText").text(job.display +" generates a base of " +job.heatGenerated +" heat, which generates attention from police, who will imprison your goons. You have unlocked the ability to bribe the police to overcome this challenge.");
+  }
+  
+  for (i = 0; i < bribes.length; i++) {
+    if(bribes[i].unlocked){
+      createBribeElements(bribes[i].name);
+    }
+  }
+  updateNextBribe();
+  $("#heatHeader").text("Heat:");
+  updateAllHeatJobText();
+  $("#bribeCashPercentText").text(summarizeNumber(calculateBribeUSD()));
+}
+
+function calculateBribeUSD(){
+  return player.bribePercent * player.USD/100;
+}
+
+function updateAllBribeHeatText(){
+  bribes.forEach((bribe) => {
+    if(!bribe.unlocked){return;}
+    $("#"+bribe.name+"heatRemoved").text(summarizeNumber(calculateBribeHeatRemoved(bribe.name)) + "(" + summarizeNumber(bribe.USDtoHeat) + ")");
+  });
+}
+
+function updateAllBribeCounters(){
+  bribes.forEach((bribe) => {
+    if(!bribe.unlocked){return;}
+    if(bribe.secondsLeft > 0){
+      bribe.secondsLeft--;
+      cooldownLeft = bribe.cooldownSeconds - bribe.secondsLeft;
+      $("#"+bribe.name+"CooldownText").text(summarizeNumber(cooldownLeft) + "/" + summarizeNumber(bribe.cooldownSeconds));
+      updateBribeProgressBar(bribe.name);
+    }
+  });
+}
+
+function updateAllHeatJobText(){
+  jobs.forEach((job) => {
+    if(job.unlocked){
+      $("#"+job.name+"heatGenerated").text(summarizeNumber(job.heatGenerated));
+    }
+    
+  });
+}
+
+function calculateGoonsImprisoned() {
+  var goonsToImprison = Math.round(player.heat / player.heatToImprison) - player.goonsImprisoned;
+  if (goonsToImprison <= player.goonsFree) {
+    player.goonsFree -= goonsToImprison;
+    player.goonsImprisoned += goonsToImprison;
+    updateHeatNumbers();
+    updateGoonNums();
+    return;
+  } else {
+    toSubtractFromJob = goonsToImprison - player.goonsFree;
+    player.goonsImprisoned += player.goonsFree;
+    player.goonsFree = 0;
+    jobNumber = 0;
+    lowestPreformingJob = jobs.find((job) => job.name === player.jobOpportunity[jobNumber]);
+    while (toSubtractFromJob > 0) {
+      
+      if (lowestPreformingJob.goonsWorking > toSubtractFromJob) {
+        lowestPreformingJob.goonsWorking -= toSubtractFromJob;
+        toSubtractFromJob = 0;
+        updateGoonNums(lowestPreformingJob.name);
+      } else {
+        toSubtractFromJob -= lowestPreformingJob.goonsWorking;
+        lowestPreformingJob.goonsWorking = 0;
+        jobNumber++;
+        updateGoonNums(lowestPreformingJob.name);
+      }
+
+      lowestPreformingJob = jobs.find((job) => job.name === player.jobOpportunity[jobNumber]);
+      if(lowestPreformingJob === undefined){
+        $("#messageText").text("You have no goons left to imprison");
+        toSubtractFromJob = 0;
+      }
+    }
+    
+    updateHeatNumbers();
+    
+  }
+}
+
+function calculateJobOpportunity(){
+  player.jobOpportunity = [];
+  var tmpJobs = jobs.slice();
+  tmpJobs.sort((a, b) => {
+    const payoutA = calculatePayout(a.name) / a.work;
+    const payoutB = calculatePayout(b.name) / b.work;
+  
+    return payoutB - payoutA; // For descending order
+  });
+  
+  tmpJobs.forEach((job) => {
+    if(job.unlocked){
+      player.jobOpportunity.push(job.name);
+    }
+  });
+  return player.jobOpportunity;
+}
+
+function hack(){
+  player.USD += 1e10;
+  updateUSD();
+  lockedJobs = jobs.filter((job) => !job.unlocked);
+  console.log(JSON.stringify(lockedJobs, null, 2));
+}
+
+function hack2(){
+  player.USD += 1e12;
+  updateUSD();
+}
+
+
+
+function calculateJobProfitPerSecond(jobName) { //I dont think this is actually needed but keeping it in case
+  let goonJob = jobs.find((goonJob) => goonJob.name === jobName);
+  capOrAssigned = Math.min(goonJob.goonsWorking, determineGoonCap(jobName));
+  percentOfCap = capOrAssigned/determineGoonCap(jobName);
+  maxPayout = calculatePayout(jobName)*UPDATESPERSECOND
+  return  maxPayout / percentOfCap;
+}
+
 function buyNewJob() {
   if (player.nextJobName == " ") {
     $("#messageText").text("You have unlocked all the crimes");
@@ -296,6 +532,11 @@ function buyNewJob() {
   job = jobs.find((job) => job.name === player.nextJobName);
 
   if (player.USD >= player.nextJobCost) {
+    if($(".postBribe").is(":hidden")){
+      if(job.heatGenerated > 0){
+        unlockBribePage();
+      }
+    }
     player.USD -= player.nextJobCost;
     job.unlocked = true;
     createCrimeElements(player.nextJobName);
@@ -376,18 +617,24 @@ function updateBuildingNumbers(jobName){
   goonJob.BuildingCost = calculateBuildingPrice(jobName);
   $("#"+jobName+"BuildingOwned").text(summarizeNumber(goonJob.BuildingsOwned));
   $("#"+jobName+"BuildingCost").text(summarizeNumber(goonJob.BuildingCost));
-  $("#"+jobName+"BuildingJobImprovement").text(jobName + " $" + summarizeNumber(goonJob.BuildingIncome));
+  $("#"+jobName+"BuildingJobImprovement").text(goonJob.display + " $" + summarizeNumber(goonJob.BuildingIncome));
   $("#"+jobName+"payoutText").text(summarizeNumber(calculatePayout(jobName)));
+  calculateJobOpportunity();
 }
 
 function updateUSD() {
   document.getElementById("USDNum").innerHTML = summarizeNumber(player.USD);
+  if($(".postBribe").is(":visible")){
+    updateAllBribeHeatText();
+    updateBribeSliderText();
+  }
+  
 }
 
 function updateGoonNums(jobName = " ", silent = false) {
   updateGoonPrice();
   document.getElementById("GoonNum").innerHTML = String(
-    player.goonsFree + "/" + player.goonsTotal
+    summarizeNumber(player.goonsFree) + "/" + summarizeNumber(player.goonsTotal)
   );
   if (jobName === "all") {
     jobs.forEach((job) => {
@@ -452,10 +699,13 @@ function workHappened(preGoon = false) {
   jobs.forEach((job) => {
     if (job.worked >= job.work) {
       var payOut = calculatePayout(job.name);
-      console.log("You have completed " + job.display + " and earned " + payOut);
       player.USD += payOut;
       job.worked = 0;
       updateUSD();
+      if($(".postBribe").is(":visible") && job.heatGenerated > 0){
+        player.heat += job.heatGenerated*player.heatMultiplier;
+        calculateGoonsImprisoned();
+      }
     }
     $("#" + job.name + "ProgressText").text(
       summarizeNumber(Math.round(job.worked * 10) / 10) + "/" + summarizeNumber(job.work)
@@ -545,6 +795,7 @@ function updateObservedJobs() {
     });
   }
   player.observing = numberObserved;
+  calculateJobOpportunity();
 }
 
 function createCrimeHeaders() {
@@ -553,16 +804,20 @@ function createCrimeHeaders() {
   const progressHeader = document.createElement("div");
   const goonHeader = document.createElement("div");
   const  payoutHeader = document.createElement("div");
+  const heatHeader = document.createElement("div");
 
   observeHeader.textContent = "Personal Actions";
   progressHeader.textContent = "Progress";
   goonHeader.textContent = "Goons";
   payoutHeader.textContent = "Payout";
+  heatHeader.textContent = "???";
+  heatHeader.id = "heatHeader";
 
   container.appendChild(observeHeader);
   container.appendChild(progressHeader);
   container.appendChild(goonHeader);
   container.appendChild(payoutHeader);
+  container.appendChild(heatHeader);
 }
 function determineGoonCap(job) {
   let goonJob = jobs.find((goonJob) => goonJob.name === job);
@@ -604,7 +859,7 @@ function capGoons(job) {
       if (goonSubtraction > 0) {
         $("#messageText").text(
           "You have reached cap for " +
-            job +
+          goonJob.display +
             " with " +
             summarizeNumber(goonJob.goonsWorking) +
             " goons, but it could have been done with " +
@@ -621,7 +876,7 @@ function capGoons(job) {
       } else {
         $("#messageText").text(
           "You have reached cap for " +
-            job +
+          goonJob.display +
             " with " +
             summarizeNumber(goonJob.goonsWorking) +
             " goons, it completes in " +
@@ -633,13 +888,13 @@ function capGoons(job) {
       if (goonAssignment == 0) {
         $("#messageText").text(
           "You do not have enough goons to make " +
-            job +
+            goonJob.display +
             " complete faster right now, you would need " +
             summarizeNumber(goonsNeeded) +
             " more free goons to make a difference. The current cap you can reach is " +
             summarizeNumber(goonsWanted) +
-            " " +
-            job +
+            ". " +
+            goonJob.display +
             " completes in " +
             summarizeNumber(jobtime) +
             " seconds."
@@ -647,7 +902,7 @@ function capGoons(job) {
       } else {
         $("#messageText").text(
           "You do not have enough goons to make " +
-            job +
+          goonJob.display +
             " complete faster right now, you would need " +
             summarizeNumber(goonsNeeded) +
             " more free goons to make a difference. The current cap you can reach is " +
@@ -657,10 +912,10 @@ function capGoons(job) {
             " seconds. You now have " +
             summarizeNumber(oonJob.goonsWorking) +
             " goons working on " +
-            job +
+            goonJob.display +
             " after reassigning " +
             summarizeNumber(goonAssignment) +
-            " goons"
+            " goons."
         );
       }
     }
@@ -706,6 +961,7 @@ function createCrimeElements(crimeName) {
   const subtractButton = document.createElement("button");
   const capButton = document.createElement("button");
   const payoutText = document.createElement("div");
+  const heatGenerated = document.createElement("div");
 
   const crimeClass = jobs.find((crimeClass) => crimeClass.name === crimeName);
 
@@ -763,9 +1019,17 @@ function createCrimeElements(crimeName) {
   };
   capButton.textContent = "CAP";
 
-  payoutText.textContent = calculatePayout(crimeName);
+  payoutText.textContent = summarizeNumber(calculatePayout(crimeName));
   payoutText.className = "payoutText";
   payoutText.id = crimeName + "payoutText";
+
+  if($(".postBribe").is(":hidden")){
+    heatGenerated.textContent = "???";
+  }else{
+    heatGenerated.textContent = summarizeNumber(crimeClass.heatGenerated * player.heatMultiplier);
+  }
+  heatGenerated.className = "heatGenerated";
+  heatGenerated.id = crimeName + "heatGenerated";
 
   // Append the elements to the container
   container.appendChild(observeButton);
@@ -777,7 +1041,9 @@ function createCrimeElements(crimeName) {
   container.appendChild(subtractButton);
   container.appendChild(capButton);
   container.appendChild(payoutText);
+  container.appendChild(heatGenerated);
 
+  calculateJobOpportunity();
   createCrimeProgressBar(crimeName);
   createBuildingElements(crimeName);
 }
@@ -794,7 +1060,6 @@ function createBuildingElements(crimeName) {
     if (document.getElementById(crimeName + "BuildingName")) {
       return;
     }
-    console.log("Creating building elements for " + JSON.stringify(crimeClass) + crimeClass.Building);
   }
 
   const buildingName = document.createElement("div");
@@ -808,7 +1073,7 @@ function createBuildingElements(crimeName) {
   buildingName.id = crimeName + "BuildingName";
   buildingName.className = "buildingName";
 
-  buildingJobImprovement.textContent = crimeName + " $" + summarizeNumber(crimeClass.BuildingIncome);
+  buildingJobImprovement.textContent = crimeClass.display + " $" + summarizeNumber(crimeClass.BuildingIncome);
   buildingJobImprovement.id = crimeName + "BuildingJobImprovement";
   buildingJobImprovement.className = "buildingJobImprovement";
 
@@ -842,9 +1107,143 @@ function createBuildingElements(crimeName) {
   container.appendChild(buyOne);
 }
 
+function createBribeElements(bribeName) {
+  const container = document.getElementById("Bribe-container");
 
+  var bribeClass = bribes.find((bribeClass) => bribeClass.name === bribeName);
+  if (bribeClass === undefined) {
+    console.log("Error: " + bribeName + " is not a valid bribe");
+    return false;
+  }
+  if (document.getElementById(bribeName + "BribeButton")) {
+    console.log("Error: " + bribeName + " is already a bribe");
+    return false;
+  }
+  const bribeButton = document.createElement("button");
+  const bribeCooldownText = document.createElement("div");
+  const bribeCooldownLdBar = document.createElement("div");
+  const bribeHeatRemoved = document.createElement("div");
+
+  bribeButton.type = "button";
+  bribeButton.id = bribeName + "BribeButton";
+  bribeButton.className = "bribeButton postBribe";
+  bribeButton.onclick = function () {
+    tryBribe(bribeName);
+  };
+  bribeButton.textContent = bribeClass.display;
+
+  bribeCooldownText.id = bribeName + "CooldownText";
+  bribeCooldownText.className = "BribeCooldownText";
+  cooldownLeft = bribeClass.cooldownSeconds - bribeClass.secondsLeft;
+  bribeCooldownText.textContent = summarizeNumber(cooldownLeft) + "/" + summarizeNumber(bribeClass.cooldownSeconds);
+
+  bribeCooldownLdBar.id = bribeName + "ProgressBar";
+  bribeCooldownLdBar.className = "ldBar label-center";
+  bribeCooldownLdBar.style = "width: 38px; height: 38px;";
+
+  bribeHeatRemoved.textContent = summarizeNumber(calculateBribeHeatRemoved(bribeName)) + "(" + summarizeNumber(bribeClass.USDtoHeat) + ")";
+  bribeHeatRemoved.className = "heatRemoved";
+  bribeHeatRemoved.id = bribeName + "heatRemoved";
+
+  container.appendChild(bribeButton);
+  container.appendChild(bribeCooldownText);
+  container.appendChild(bribeCooldownLdBar);
+  container.appendChild(bribeHeatRemoved);
+
+  createBribeProgressBar(bribeName);
+  return true;
+}
+
+function createBribeProgressBar(bribeName) {
+  const barName = "#" + bribeName + "ProgressBar";
+  var progressBar = new ldBar(barName, {
+    stroke: "#248",
+    type: "fill",
+    path: "M1 1L100 1L100 100L1 100Z",
+    fill: "data:ldbar/res,bubble(#248,#fff,50,1)",
+    value: "0",
+  });
+  updateBribeProgressBar(bribeName);
+}
+
+function tryBribe(bribeName) {
+  let bribeClass = bribes.find((bribeClass) => bribeClass.name === bribeName);
+  if (bribeClass.secondsLeft > 0) {
+    $("#messageText").text("You cannot bribe the police right now, you have to wait " + summarizeNumber(bribeClass.secondsLeft) + " seconds");
+    return;
+  }
+  if (player.USD < calculateBribeUSD()) {
+    $("#messageText").text("You do not have enough money to bribe the police right now, you need " + summarizeNumber(calculateBribeUSD()) + "$");
+    return;
+  }
+  let heatRemoved = calculateBribeHeatRemoved(bribeName);
+  let Cost = calculateBribeUSD();
+  if(heatRemoved > player.heat){
+    Cost = player.heat/heatRemoved * Cost;
+    heatRemoved = player.heat;
+  }
+  player.heat -= heatRemoved;
+  player.USD -= Cost;
+  updateUSD();
+  bribeClass.secondsLeft = bribeClass.cooldownSeconds;
+  $("#messageText").text("You have " + bribeClass.display + " for " + summarizeNumber(Cost) + "$ and removed " + summarizeNumber(heatRemoved) + " heat");
+  updateBribeProgressBar(bribeName);
+
+}
+
+function updateBribeProgressBar(bribeName) {
+
+  var progressBarElement = document.getElementById(bribeName + "ProgressBar");
+  if (!progressBarElement) {
+    console.error('No progress bar element found with id:', bribeName + "ProgressBar");
+    return;
+  }
+
+  var progressBar = progressBarElement.ldBar;
+  if (!progressBar) {
+    console.error('ldBar is not defined on the progress bar element');
+    return;
+  }
+
+  const bribeClass = bribes.find((bribeClass) => bribeClass.name === bribeName);
+  if (!bribeClass) {
+    console.error('No bribe found with name:', bribeName);
+    return;
+  }
+
+  if (bribeClass.cooldownSeconds === 0) {
+    console.error('cooldownSeconds cannot be zero');
+    return;
+  }
+  var precentFull = (bribeClass.cooldownSeconds - bribeClass.secondsLeft) / bribeClass.cooldownSeconds * 100;
+  progressBar.set(precentFull, true);
+}
+
+function calculateBribeHeatRemoved(bribeName) {
+  if (!bribes || !bribeName) {
+    console.error('bribes or bribeName is undefined');
+  } else {
+    let bribeClass = bribes.find((bribeClass) => bribeClass.name === bribeName);
+  
+    if (!bribeClass) {
+      console.error('No matching bribe found with name: ' + bribeName);
+    } else {
+      // Continue with your code
+      let bribeClass = bribes.find((bribeClass) => bribeClass.name === bribeName);
+      heatRemoved = bribeClass.USDtoHeat * player.USD * player.bribePercent/100;
+      return heatRemoved;
+    }
+  }
+  
+}
 function summarizeNumber(number) {
   const ranges = [
+    { divider: 1e36, suffix: 'Ud', fullWord: 'Undecillion', fullWordPlural: 'Undecillions' },
+    { divider: 1e33, suffix: 'Dc', fullWord: 'Decillion', fullWordPlural: 'Decillions' },
+    { divider: 1e30, suffix: 'No', fullWord: 'Nonillion', fullWordPlural: 'Nonillions' },
+    { divider: 1e27, suffix: 'Oc', fullWord: 'Octillion', fullWordPlural: 'Octillions' },
+    { divider: 1e24, suffix: 'Sp', fullWord: 'Septillion', fullWordPlural: 'Septillions' },
+    { divider: 1e21, suffix: 'Sx', fullWord: 'Sextillion', fullWordPlural: 'Sextillions' },
     { divider: 1e18, suffix: 'Qt', fullWord: 'Quintillion', fullWordPlural: 'Quintillions' },
     { divider: 1e15, suffix: 'Q', fullWord: 'Quadrillion', fullWordPlural: 'Quadrillions' },
     { divider: 1e12, suffix: 'T', fullWord: 'Trillion', fullWordPlural: 'Trillions' },
@@ -866,6 +1265,7 @@ function summarizeNumber(number) {
 function saveGame() {
   localStorage.setItem("player", JSON.stringify(player));
   localStorage.setItem("jobs", JSON.stringify(jobs));
+  localStorage.setItem("bribes", JSON.stringify(bribes));
   $("#messageText").text("Game saved");
   player.hasSaved = true;
 }
@@ -893,11 +1293,24 @@ function loadGame() {
   wakeUp();
   if (player.timesShoplifted > GOONUNLOCK) {
     unlockGoonPage();
+    var bribeUnlocked = false;
     for (var i = 1; i < jobs.length; i++) {
       if (!jobs[i].unlocked) {
         break;
       }
       createCrimeElements(jobs[i].name);
+      if(jobs[i].heatGenerated > 0 && !bribeUnlocked){
+        bribeUnlocked = true;
+        unlockBribePage(true);
+        bribes = JSON.parse(localStorage.getItem("bribes"));
+        bribes.forEach((bribe) => {
+          if(bribe.unlocked){
+            createBribeElements(bribe.name);
+          }
+        });
+        
+        updateAllHeatJobText();
+      }
     }
     nextJob = jobs.find((job) => !job.unlocked);
     if(nextJob != undefined){
@@ -905,6 +1318,11 @@ function loadGame() {
     }
     updateGoonNums("all");
     updateObservedJobs();
+    if(bribeUnlocked){
+      updateAllHeatJobText();
+      updateAllBribeCounters();
+    }
+    
   }
 }
 // Call the function to create the buttons
@@ -916,6 +1334,19 @@ window.setInterval(function () {
   }
   if ($(".postGoon").is(":visible")) {
     goonsWork();
+  }
+  if ($(".postBribe").is(":visible")) {
+    if (player.heat > 0) {
+      player.heat -= parseFloat(player.heatDecay*UPDATETIMESECONDS).toFixed(10);
+      calculateGoonsImprisoned();
+      updateHeatNumbers();
+    }
+
+    if(ticksSinceLastBribeUpdate >= UPDATESPERSECOND){
+      updateAllBribeCounters();
+      ticksSinceLastBribeUpdate = 0;
+    }else{ticksSinceLastBribeUpdate++;}
+    
   }
   if (player.energy < player.energyMax) {
     player.energy += parseFloat(

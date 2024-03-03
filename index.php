@@ -14,6 +14,7 @@
     -->
     <script src="player-stats.js"></script>
     <script src="jobs.js"></script>
+    <script src="bribes.js"></script>
     <script src="game.js"></script>
     
     <style>
@@ -26,6 +27,7 @@
     <h1>Idle Criminal Empire</h1>
 
     <span> $: </span> <span id="USDNum"> 0 </span> <span> Goons:</span> <span id="GoonNum"> 0.0 </span> <span> Energy </span> <span id="EnergyNum"> 0 </span> <span> / </span> <span id="EnergyMaxNum"> 0 </span>
+    <span id="HeatTitle" class = "postBribe"> Heat(Imprisoned Goons): </span> <span id="heatNums" class = "postBribe"> 0(0) </span> 
     <br>
     <button type="button" onclick="menuNavClicked(CrimePage)">Crimes </button>
     <button type="button" id="goonMenuButton" class = "postGoon" onclick="menuNavClicked(GoonPage)">Hire Goons and Buy Buildings </button>
@@ -64,15 +66,28 @@
                 <div>Improves Job Payout By:</div>
                 <div>Cost:</div>
                 <div>Owned:</div>
-                <div>Buy Buttons:</div>
+                <div>Buy:</div>
         </div>
         <div id="Building-container" class = "building-container postGoon"> </div>
     </div>
 
     <div id="BribePage">
         <h1>Bribe: </h1>
+        <button type="button" onclick="buyNewBribe()" id = "purchaseBribeButton">Buy New Bribe</button>
+        <button type="button" onclick="buyMaxNewBribe()" id = "purchaseMaxBribeButton">Buy Max New Bribe</button>
+        <span id = "CostOfBribingText">Cost of unlocking Bribe Cops : </span><span id="NextBribeCost">err</span>
+        <br>
+        <div class="slidecontainer"><input type="range" min="1" max="100" value="50" class="slider" id="bribePercentSlider"></div><br>
+        <span>Percentage of Cash to Bribe: </span><span id="bribeCashPercentText">50</span> <span>% or </span> <span id="bribeCashAmountText">0</span> <span>USD</span>
+        <br>
+        <div id="Bribe-container-header" class = "bribe-container postBribe">
+            <div>Bribe:</div> 
+            <div>Cooldown:</div>
+            <div>Heat Removed: (Heat/USD)</div>
+        </div>
+        <div id="Bribe-container" class = "bribe-container postBribe"> </div>
     </div>
-
+    
     <br>
     <div id= "SaveLoad">
         <button type="button" onclick="saveGame()">Save</button>
@@ -82,6 +97,11 @@
 
     <br>
     <span> Version </span> <span id="versionNum"> error </span>
+    <br>
+    <!--
+    <button type= "button" onclick="hack()">Hack Button</button>
+    <button type= "button" onclick ="hack2()">Hack Button 2</button>
+    --!>
 
 </body>
 
